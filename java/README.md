@@ -29,6 +29,7 @@ nel file src/main/resources/application.properties modificare la lista dei prodo
 
 ## Documentazione di riferimento
 
+* [Official Radar DPC Documentation](https://dpc-radar.readthedocs.io/it/latest/) 
 * [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
 * [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/docs/2.3.1.RELEASE/maven-plugin/reference/html/)
 * [WebSocket](https://docs.spring.io/spring-boot/docs/2.3.1.RELEASE/reference/htmlsingle/#boot-features-websockets)

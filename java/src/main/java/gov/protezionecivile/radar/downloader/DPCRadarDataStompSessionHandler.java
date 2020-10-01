@@ -277,7 +277,6 @@
 
 package gov.protezionecivile.radar.downloader;
 
-import com.google.common.base.Preconditions;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -297,6 +296,8 @@ import org.springframework.stereotype.Component;
 import java.io.*;
 import java.lang.reflect.Type;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /**
  * @author Francesco Izzi @ CNR IMAA geoSDI
  */
@@ -304,16 +305,14 @@ import java.lang.reflect.Type;
 @Component(value = "dpcSessionHandler")
 public class DPCRadarDataStompSessionHandler extends StompSessionHandlerAdapter implements InitializingBean {
 
+    private static final Logger logger = LogManager.getLogger(DPCRadarDataStompSessionHandler.class);
+    //
     @Value("${productToDownload}")
     public String productToDownload;
-
     @Value("${defaultSavePath}")
     public String defaultSavePath;
-
     private final String DOWNLOAD_PRODUCT_URL = "http://www.protezionecivile.gov.it/wide-api/wide/product/downloadProduct";
-
-    private Logger logger = LogManager.getLogger(DPCRadarDataStompSessionHandler.class);
-
+    private StompClient stompClient;
 
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
@@ -404,6 +403,22 @@ public class DPCRadarDataStompSessionHandler extends StompSessionHandlerAdapter 
         }
     }
 
+    /**
+     * This implementation is empty.
+     *
+     * @param session
+     * @param exception
+     */
+    @Override
+    public void handleTransportError(StompSession session, Throwable exception) {
+        logger.warn("#########################handleTransportError : {}\n", exception.getMessage());
+        try {
+            this.stompClient.reconnect();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     public String getProductToDownload() {
         return productToDownload;
     }
@@ -412,10 +427,17 @@ public class DPCRadarDataStompSessionHandler extends StompSessionHandlerAdapter 
         return defaultSavePath;
     }
 
+    /**
+     * @param theStompClient
+     */
+    void injectStompClient(StompClient theStompClient) {
+        this.stompClient = theStompClient;
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
-        Preconditions.checkArgument(this.productToDownload != null && !this.productToDownload.trim().isEmpty(), "The paramenter productToDownload not present");
-        Preconditions.checkArgument(this.defaultSavePath != null && !this.defaultSavePath.trim().isEmpty(), "The paramenter defaultSavePath not present");
+        checkArgument(this.productToDownload != null && !this.productToDownload.trim().isEmpty(), "The paramenter productToDownload not present");
+        checkArgument(this.defaultSavePath != null && !this.defaultSavePath.trim().isEmpty(), "The paramenter defaultSavePath not present");
         logger.info("Configured products to Download : {} ",productToDownload);
         logger.info("Directory to download DPC-Radar data : {} ", defaultSavePath);
     }

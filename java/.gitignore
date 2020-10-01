@@ -1,0 +1,15 @@
+# ignore target artifact folders
+target/
+
+# ignore IDE artifacts
+.settings
+.classpath
+.project
+*.idea
+.class
+.DS_Store
+
+# ignore demo artifact folders
+*.iml
+/.idea/
+/target/

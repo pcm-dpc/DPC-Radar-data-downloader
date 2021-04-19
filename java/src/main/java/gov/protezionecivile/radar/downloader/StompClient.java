@@ -301,7 +301,7 @@ public class StompClient {
 
     private static final Logger logger = LogManager.getLogger(StompClient.class);
     //
-    private static String RADAR_WEBSOCKET_URL = "ws://www.protezionecivile.gov.it/wide-websocket";
+    private static String RADAR_WEBSOCKET_URL = "wss://radar.protezionecivile.gov.it/wide-websocket";
 
     @Autowired
     @Qualifier(value = "dpcSessionHandler")

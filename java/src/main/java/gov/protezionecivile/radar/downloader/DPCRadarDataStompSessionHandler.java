@@ -311,7 +311,7 @@ public class DPCRadarDataStompSessionHandler extends StompSessionHandlerAdapter 
     public String productToDownload;
     @Value("${defaultSavePath}")
     public String defaultSavePath;
-    private final String DOWNLOAD_PRODUCT_URL = "http://www.protezionecivile.gov.it/wide-api/wide/product/downloadProduct";
+    private final String DOWNLOAD_PRODUCT_URL = "https://radar.protezionecivile.gov.it/wide-api/wide/product/downloadProduct";
     private StompClient stompClient;
 
     @Override

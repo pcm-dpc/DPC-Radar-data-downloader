@@ -276,6 +276,8 @@
  */
 package gov.protezionecivile.radar.downloader;
 
+import java.util.Date;
+
 /**
  * @author Francesco Izzi @ CNR IMAA geoSDI
  */
@@ -283,7 +285,7 @@ package gov.protezionecivile.radar.downloader;
 public class DPCWebsocketMessage {
 
     private String productType;
-    private String time;
+    private Date time;
     private String period;
 
     public String getProductType() {
@@ -294,11 +296,11 @@ public class DPCWebsocketMessage {
         this.productType = productType;
     }
 
-    public String getTime() {
+    public Date getTime() {
         return time;
     }
 
-    public void setTime(String time) {
+    public void setTime(Date time) {
         this.time = time;
     }
 
@@ -314,7 +316,7 @@ public class DPCWebsocketMessage {
 
         return "{" +
                 "\"productType\":"+"\"" + getProductType() +"\"," +
-                "\"productDate\":"+ getTime() +
+                "\"productDate\":"+ getTime().getTime() +
                 "}";
     }
 

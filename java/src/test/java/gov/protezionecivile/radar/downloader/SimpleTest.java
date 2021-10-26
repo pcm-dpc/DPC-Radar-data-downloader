@@ -274,64 +274,32 @@
  * — All other changes or additions to this Appendix require the production of a
  * new EUPL version.
  */
-
 package gov.protezionecivile.radar.downloader;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.messaging.converter.MappingJackson2MessageConverter;
-import org.springframework.messaging.simp.stomp.StompSession;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.stereotype.Component;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.web.socket.client.WebSocketClient;
-import org.springframework.web.socket.client.standard.StandardWebSocketClient;
-import org.springframework.web.socket.messaging.WebSocketStompClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
+import java.io.StringReader;
 
 /**
- * @author Francesco Izzi @ CNR IMAA geoSDI
+ * @author Giuseppe La Scaleia - CNR IMAA geoSDI Group
+ * @email giuseppe.lascaleia@geosdi.org
  */
+public class SimpleTest {
 
-@Component
-public class StompClient {
-
-    private static final Logger logger = LogManager.getLogger(StompClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(SimpleTest.class);
     //
-    protected static String RADAR_WEBSOCKET_URL = "wss://7ju75f7wai.execute-api.eu-south-1.amazonaws.com/Prod";
+    private static ObjectMapper objectMapper = new ObjectMapper();
 
-    @Autowired
-    @Qualifier(value = "dpcSessionHandler")
-    private DPCRadarDataStompSessionHandler stompSessionHandler;
-    private WebSocketStompClient stompClient;
-    private volatile StompSession session;
-
-    StompClient() {
-    }
-
-    @PostConstruct
-    public void start() throws Exception {
-        logger.info("Connecting to Radar-DPC websocket ... waiting for messages");
-        WebSocketClient client = new StandardWebSocketClient();
-        this.stompClient = new WebSocketStompClient(client);
-        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
-        ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
-        taskScheduler.afterPropertiesSet();
-        stompClient.setTaskScheduler(taskScheduler);
-        this.session = stompClient.connect(RADAR_WEBSOCKET_URL, this.stompSessionHandler).get();
-        this.stompSessionHandler.injectStompClient(this);
-    }
-
-    void reconnect() throws Exception {
-        if (!this.session.isConnected()) {
-            logger.info("################################Trying to reconnect");
-            ListenableFuture<StompSession> stompSessionFuture = this.stompClient.connect(RADAR_WEBSOCKET_URL, this.stompSessionHandler);
-            this.session = stompSessionFuture.get();
-        } else {
-            logger.info("#####################StompClient is connected another error occured.");
-        }
+    @Test
+    public void simpleTest() throws Exception {
+        DPCWebsocketMessage message = objectMapper.readValue(new StringReader("{\n"
+                + "  \"productType\" : \"SRI\",\n"
+                + "  \"time\" : 1537939200000,\n"
+                + "  \"period\" : \"TEST\"\n"
+                + "}"), DPCWebsocketMessage.class);
+        logger.info("{}\n", message);
     }
 }

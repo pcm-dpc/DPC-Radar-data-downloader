@@ -287,7 +287,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -302,7 +301,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * @author Francesco Izzi @ CNR IMAA geoSDI
  */
-@Profile(value = "stomp")
+
 @Component(value = "dpcSessionHandler")
 public class DPCRadarDataStompSessionHandler extends StompSessionHandlerAdapter implements InitializingBean {
 
@@ -312,7 +311,7 @@ public class DPCRadarDataStompSessionHandler extends StompSessionHandlerAdapter 
     public String productToDownload;
     @Value("${defaultSavePath}")
     public String defaultSavePath;
-    private final String DOWNLOAD_PRODUCT_URL = "https://radar-api.protezionecivile.it/wide/product/downloadProduct";
+    private final String DOWNLOAD_PRODUCT_URL = "https://radar.protezionecivile.gov.it/wide-api/wide/product/downloadProduct";
     private StompClient stompClient;
 
     @Override

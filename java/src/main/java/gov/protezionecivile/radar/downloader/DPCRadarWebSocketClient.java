@@ -377,7 +377,7 @@ public class DPCRadarWebSocketClient implements InitializingBean, DisposableBean
             webSocketClient.setTaskExecutor(this.taskExecutor);
             this.webSocketSession = webSocketClient.doHandshake(this.dpcRadarTextWebSocketHandler, new WebSocketHttpHeaders(), URI.create(RADAR_WEBSOCKET_URL)).get();
             this.dpcRadarTextWebSocketHandler.injectStompClient(this);
-            logger.info("#################Connecting to Radar-DPC websocket ... waiting for messages");
+            logger.info("#################Connected to Radar-DPC websocket ... waiting for messages");
         } else {
             logger.debug("############################{} is already Configured.", this);
         }

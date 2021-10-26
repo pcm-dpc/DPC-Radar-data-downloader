@@ -277,6 +277,8 @@
 package gov.protezionecivile.radar.downloader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -328,9 +330,11 @@ public class DPCRadarTextWebSocketHandler extends TextWebSocketHandler implement
         logger.info("Web socket message received processing ... : {}\n", msg);
         if (this.productToDownload.contains(msg.getProductType())) {
             CloseableHttpClient client = HttpClients.createDefault();
+
             HttpPost httpPost = new HttpPost(DOWNLOAD_PRODUCT_URL);
             StringEntity requestEntity = new StringEntity(msg.toJsonString(), APPLICATION_JSON);
             httpPost.setEntity(requestEntity);
+            httpPost.setConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.IGNORE_COOKIES).build());
             byte[] buffer = new byte[1024];
             try {
                 CloseableHttpResponse response = client.execute(httpPost);
@@ -384,6 +388,7 @@ public class DPCRadarTextWebSocketHandler extends TextWebSocketHandler implement
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         logger.info("########################ConnectionClosed for Session : {} - Status : {}\n", session, status);
+        this.webSocketClient.reconnect();
     }
 
     /**

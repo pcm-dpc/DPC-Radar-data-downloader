@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>gov.protezionecivile.radar</groupId>
 	<artifactId>downloader</artifactId>
-	<version>1.0.3</version>
+	<version>1.0.6</version>
 	<name>dpc-radar-downloader</name>
 	<description>Automatic download DPC Radar data from websocket message</description>
 

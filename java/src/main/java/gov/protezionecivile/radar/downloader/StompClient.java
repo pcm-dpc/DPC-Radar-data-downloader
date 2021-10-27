@@ -281,6 +281,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -295,7 +296,7 @@ import javax.annotation.PostConstruct;
 /**
  * @author Francesco Izzi @ CNR IMAA geoSDI
  */
-
+@Profile(value = "stomp")
 @Component
 public class StompClient {
 

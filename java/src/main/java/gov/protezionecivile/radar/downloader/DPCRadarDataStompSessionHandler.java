@@ -287,6 +287,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -301,7 +302,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * @author Francesco Izzi @ CNR IMAA geoSDI
  */
-
+@Profile(value = "stomp")
 @Component(value = "dpcSessionHandler")
 public class DPCRadarDataStompSessionHandler extends StompSessionHandlerAdapter implements InitializingBean {
 

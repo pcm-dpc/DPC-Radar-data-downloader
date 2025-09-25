@@ -300,6 +300,8 @@ import java.net.URL;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.io.File.separator;
+import static java.nio.file.Files.newOutputStream;
+import static java.nio.file.Paths.get;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 /**
@@ -348,7 +350,10 @@ public class DPCRadarTextWebSocketHandler extends TextWebSocketHandler implement
                     if (!directory.exists()) {
                         directory.mkdirs();
                     }
-                    try (OutputStream output = new FileOutputStream(defaultSavePath.endsWith(separator) ? defaultSavePath + msg.getProductType() + separator + filename : defaultSavePath.concat(separator).concat(msg.getProductType()).concat(separator).concat(filename))) {
+                    try (OutputStream output = newOutputStream(get(defaultSavePath.endsWith(separator) ?
+                            defaultSavePath + msg.getProductType() + separator + filename :
+                            defaultSavePath.concat(separator).concat(msg.getProductType()).concat(separator)
+                                    .concat(filename)))) {
                         for (int length; (length = input.read(buffer)) > 0; ) {
                             output.write(buffer, 0, length);
                         }

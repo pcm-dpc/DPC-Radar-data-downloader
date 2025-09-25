@@ -276,6 +276,8 @@
  */
 package gov.protezionecivile.radar.downloader;
 
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -289,8 +291,6 @@ import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -335,7 +335,7 @@ public class DPCRadarWebSocketClient implements InitializingBean, DisposableBean
             webSocketContainer.setDefaultMaxTextMessageBufferSize(1024 * 1024);
             StandardWebSocketClient webSocketClient = new StandardWebSocketClient(webSocketContainer);
             webSocketClient.setTaskExecutor(this.taskExecutor);
-            this.webSocketSession = webSocketClient.doHandshake(this.dpcRadarTextWebSocketHandler, new WebSocketHttpHeaders(), URI.create(RADAR_WEBSOCKET_URL)).get();
+            this.webSocketSession = webSocketClient.execute(this.dpcRadarTextWebSocketHandler, new WebSocketHttpHeaders(), URI.create(RADAR_WEBSOCKET_URL)).get();
         } else {
             logger.info("#####################DPCRadarWebSocketClient is connected another error occured.");
         }
@@ -375,7 +375,7 @@ public class DPCRadarWebSocketClient implements InitializingBean, DisposableBean
             webSocketContainer.setDefaultMaxTextMessageBufferSize(1024 * 1024);
             StandardWebSocketClient webSocketClient = new StandardWebSocketClient(webSocketContainer);
             webSocketClient.setTaskExecutor(this.taskExecutor);
-            this.webSocketSession = webSocketClient.doHandshake(this.dpcRadarTextWebSocketHandler, new WebSocketHttpHeaders(), URI.create(RADAR_WEBSOCKET_URL)).get();
+            this.webSocketSession = webSocketClient.execute(this.dpcRadarTextWebSocketHandler, new WebSocketHttpHeaders(), URI.create(RADAR_WEBSOCKET_URL)).get();
             this.dpcRadarTextWebSocketHandler.injectStompClient(this);
             logger.info("#################Connected to Radar-DPC websocket ... waiting for messages");
         } else {

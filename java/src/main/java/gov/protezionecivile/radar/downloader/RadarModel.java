@@ -276,130 +276,83 @@
  */
 package gov.protezionecivile.radar.downloader;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
-import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
-import org.springframework.web.socket.handler.TextWebSocketHandler;
-
-import java.io.*;
-import java.net.URL;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.io.File.separator;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Giuseppe La Scaleia - CNR IMAA geoSDI Group
  * @email giuseppe.lascaleia@geosdi.org
  */
-@Profile(value = "without_stomp")
-@Component(value = "dpcRadarTextWebSocketHandler")
-public class DPCRadarTextWebSocketHandler extends TextWebSocketHandler implements InitializingBean {
+public class RadarModel implements DPCRadarModel {
 
-    private static final Logger logger = LoggerFactory.getLogger(DPCRadarTextWebSocketHandler.class);
+    private static final long serialVersionUID = 6741017499419950879L;
     //
-    @Value("${productToDownload}")
-    public String productToDownload;
-    @Value("${defaultSavePath}")
-    public String defaultSavePath;
-    private final String DOWNLOAD_PRODUCT_URL = "https://wagiqofvnk.execute-api.eu-south-1.amazonaws.com/prod/downloadProduct";
-    private final ObjectMapper mapper = new ObjectMapper();
-    private DPCRadarWebSocketClient webSocketClient;
+    private final String bucket;
+    private final String key;
+    private final String urlFile;
+    private final Integer expiresSeconds;
 
-    @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        logger.info("@@@@@@@@@@@@@@@@@@@@@@@@established connection - {}\n", session);
-    }
-
-    @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        DPCWebsocketMessage msg = this.mapper.readValue(new StringReader(message.getPayload()), DPCWebsocketMessage.class);
-        logger.info("Web socket message received processing ... : {}\n", msg);
-        if (this.productToDownload.contains(msg.getProductType())) {
-            CloseableHttpClient client = HttpClients.createDefault();
-
-            HttpPost httpPost = new HttpPost(DOWNLOAD_PRODUCT_URL);
-            StringEntity requestEntity = new StringEntity(msg.toJsonString(), APPLICATION_JSON);
-            httpPost.setEntity(requestEntity);
-            httpPost.setConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.IGNORE_COOKIES).build());
-            byte[] buffer = new byte[1024];
-            try {
-                CloseableHttpResponse response = client.execute(httpPost);
-                DPCRadarModel radarModel = this.mapper.readValue(response.getEntity().getContent(), DPCRadarModel.class);
-                String filename = radarModel.getFileName();
-                logger.info("Downloading " + msg.getProductType() + " file: " + filename);
-                URL url = new URL(radarModel.getUrlFile());
-                try (InputStream input =  url.openStream()) {
-                    File directory = new File(defaultSavePath.endsWith(separator) ? defaultSavePath + msg.getProductType() + separator : defaultSavePath + separator + msg.getProductType() + separator);
-                    if (!directory.exists()) {
-                        directory.mkdirs();
-                    }
-                    try (OutputStream output = new FileOutputStream(defaultSavePath.endsWith(separator) ? defaultSavePath + msg.getProductType() + separator + filename : defaultSavePath.concat(separator).concat(msg.getProductType()).concat(separator).concat(filename))) {
-                        for (int length; (length = input.read(buffer)) > 0; ) {
-                            output.write(buffer, 0, length);
-                        }
-                    }
-                    logger.info("File successfully downloaded!");
-                }
-
-            } catch (IOException e) {
-                logger.error("Error downloading file ...", e);
-                this.webSocketClient.reconnect();
-            } finally {
-                try {
-                    client.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    this.webSocketClient.reconnect();
-                }
-            }
-        } else {
-            logger.info("Nothing to do ... passing");
-        }
-    }
-
-    @Override
-    public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        logger.warn("#########################handleTransportError : {}\n", exception.getMessage());
-        try {
-            this.webSocketClient.reconnect();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        logger.info("########################ConnectionClosed for Session : {} - Status : {}\n", session, status);
-        this.webSocketClient.reconnect();
+    /**
+     * @param bucket
+     * @param key
+     * @param urlFile
+     */
+    @JsonCreator
+    public RadarModel(@JsonProperty(value = "bucket") String bucket, @JsonProperty(value = "key") String key,
+            @JsonProperty(value = "url") String urlFile, @JsonProperty(value = "expiresSeconds") Integer expiresSeconds) {
+        this.bucket = bucket;
+        this.key = key;
+        this.urlFile = urlFile;
+        this.expiresSeconds = expiresSeconds;
     }
 
     /**
-     * @param theWebSocketClient
+     * @return {@link String}
      */
-    void injectStompClient(DPCRadarWebSocketClient theWebSocketClient) {
-        this.webSocketClient = theWebSocketClient;
+    @Override
+    public String getBucket() {
+        return this.bucket;
+    }
+
+    /**
+     * @return {@link String}
+     */
+    @Override
+    public String getKey() {
+        return this.key;
+    }
+
+    /**
+     * @return {@link String}
+     */
+    @Override
+    public String getUrlFile() {
+        return this.urlFile;
+    }
+
+    /**
+     * @return {@link Integer}
+     */
+    @Override
+    public Integer getExpiresSeconds() {
+        return this.expiresSeconds;
+    }
+
+    /**
+     * @return {@link String}
+     */
+    @Override
+    public String getFileName() {
+        int flag = this.key.lastIndexOf("/");
+        return (flag != -1) ? this.key.substring(flag + 1, key.length()) : key;
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        checkArgument(this.productToDownload != null && !this.productToDownload.trim().isEmpty(), "The paramenter productToDownload not present");
-        checkArgument(this.defaultSavePath != null && !this.defaultSavePath.trim().isEmpty(), "The paramenter defaultSavePath not present");
-        logger.info("Configured products to Download : {} ", productToDownload);
-        logger.info("Directory to download DPC-Radar data : {} ", defaultSavePath);
+    public String toString() {
+        return this.getClass().getSimpleName() + "{"
+                + "bucket='" + bucket
+                + '\'' + ", key='" + key
+                + '\'' + ", urlFile='" + urlFile
+                + '\'' + ", expiresSeconds=" + expiresSeconds + '}';
     }
 }

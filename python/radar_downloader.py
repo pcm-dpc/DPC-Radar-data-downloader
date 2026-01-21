@@ -27,6 +27,10 @@ from websocket import WebSocketApp
 WS_URL_DEFAULT = os.getenv("RADAR_WS_URL", "wss://radar-wss.protezionecivile.it")
 WS_SUBSCRIBE_DEFAULT = os.getenv("RADAR_WS_SUBSCRIBE", "")  # optional payload to send after connect
 
+# Application-level heartbeat (message routed to $default)
+WS_HEARTBEAT_INTERVAL = int(os.getenv("RADAR_WS_HEARTBEAT_INTERVAL", "30"))  # seconds
+WS_HEARTBEAT_ENABLED = os.getenv("RADAR_WS_HEARTBEAT_ENABLED", "1").lower() not in ("0", "false", "no")
+
 # IMPORTANT: CloudFront/WAF often blocks non-browser UA; set a "browser-like" default UA
 WS_USER_AGENT_DEFAULT = os.getenv(
     "RADAR_WS_USER_AGENT",
@@ -178,9 +182,12 @@ class PureWsClient:
 
         self.ws: Optional[WebSocketApp] = None
 
+        # heartbeat thread control (per-connection)
+        self._hb_stop = threading.Event()
+        self._hb_thread: Optional[threading.Thread] = None
+
     @staticmethod
     def _extract_events(obj: JsonLike) -> Iterable[dict]:
-        # Adjust here if your WS wraps payloads differently
         if isinstance(obj, dict):
             if "data" in obj and isinstance(obj["data"], dict) and ("productType" in obj["data"] or "time" in obj["data"]):
                 yield obj["data"]
@@ -192,8 +199,57 @@ class PureWsClient:
                 if isinstance(item, dict):
                     yield item
 
+    def _stop_heartbeat(self):
+        try:
+            self._hb_stop.set()
+            if self._hb_thread and self._hb_thread.is_alive():
+                self._hb_thread.join(timeout=1.0)
+        except Exception:
+            pass
+        finally:
+            self._hb_thread = None
+            self._hb_stop = threading.Event()
+
+    def _start_heartbeat(self, ws: WebSocketApp):
+        # stop any previous heartbeat (on reconnect)
+        self._stop_heartbeat()
+
+        if not WS_HEARTBEAT_ENABLED or WS_HEARTBEAT_INTERVAL <= 0:
+            return
+
+        def loop():
+            # manda heartbeat finché la connessione è viva e non stiamo spegnendo
+            while not self.stop_event.is_set() and not self._hb_stop.is_set():
+                time.sleep(WS_HEARTBEAT_INTERVAL)
+                if self.stop_event.is_set() or self._hb_stop.is_set():
+                    break
+
+                # controlla che la socket sia ancora connessa
+                try:
+                    if not (ws.sock and ws.sock.connected):
+                        break
+                except Exception:
+                    break
+
+                # Payload per $default: la Lambda server-side deve riconoscerlo e non trattarlo come product event
+                hb = {"type": "heartbeat", "ts": int(time.time() * 1000)}
+                try:
+                    ws.send(json.dumps(hb, separators=(",", ":")))
+                    logging.debug("→ heartbeat sent")
+                except Exception as e:
+                    logging.debug("heartbeat send failed: %s", e)
+                    break
+
+        self._hb_thread = threading.Thread(target=loop, daemon=True)
+        self._hb_thread.start()
+
     def _on_open(self, ws):
         logging.info("WebSocket opened: %s", self.ws_url)
+
+        # start app-level heartbeat (so $default can refresh TTL)
+        self._start_heartbeat(ws)
+
+        # optional subscribe payload
         if self.subscribe_payload.strip():
             try:
                 ws.send(self.subscribe_payload)
@@ -212,7 +268,6 @@ class PureWsClient:
         if not msg:
             return
 
-        # Support NDJSON-ish
         chunks = [msg]
         if "\n" in msg and not msg.lstrip().startswith("["):
             chunks = [ln.strip() for ln in msg.splitlines() if ln.strip()]
@@ -224,13 +279,17 @@ class PureWsClient:
                 logging.debug("Non-JSON message ignored (first 200 chars): %r", chunk[:200])
                 continue
 
+            # se il server risponde ai heartbeat, qui verranno ignorati perché non hanno productType/time
             for ev in self._extract_events(obj):
                 self.on_event(ev)
 
     def _on_close(self, ws, code, reason):
+        self._stop_heartbeat()
         logging.warning("WebSocket closed: code=%s reason=%s", code, reason)
 
     def _on_error(self, ws, error):
+        # spesso _on_error precede la close su alcune condizioni
+        self._stop_heartbeat()
         logging.error("WebSocket error: %s", error)
 
     def run_forever(self):
@@ -252,12 +311,15 @@ class PureWsClient:
             except Exception as e:
                 logging.error("run_forever exception: %s", e)
 
+            self._stop_heartbeat()
+
             if self.stop_event.is_set():
                 break
 
             logging.info("Reconnecting in %.1fs ...", backoff)
             time.sleep(backoff)
             backoff = min(backoff * 2, BACKOFF_MAX)
+
 
 
 # ---------------------- Main app ----------------------
